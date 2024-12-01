@@ -24,7 +24,7 @@ public class TrainingWindow extends Window {
     PApplet.println("Time taken: " + (endTime - startTime) + " ms");
 
     startButton = new Button(p, 10f, 60f, 60, 40, "Start Training", position, () -> {
-      nn.learn(1f);
+      nn.learn(0.01f);
       // p.println("Cost: " + cost);
       double trainingAccuracy = nn.calculateAccuracy();
       costGraph.addPoint(new GraphPoint(new PVector(costGraph.points.size(),

@@ -2,6 +2,8 @@ package dk.voe;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 import dk.voe.MnistDataLoader.DataSet;
 import processing.core.PApplet;
@@ -33,8 +35,13 @@ public class NeuralNetwork extends Drawable {
   public void learn(double learningRate) {
     List<double[]> images = dataset[0].getImages();
 
-    for (int i = 0; i < images.size(); i++) {
-      updateAllGradients(i);
+    // pick out 100 random images and only train on those
+    Random random = new Random();
+    List<Integer> randomIndices = random.ints(0, images.size()).distinct().limit(100).boxed()
+        .collect(Collectors.toList());
+
+    for (int i = 0; i < randomIndices.size(); i++) {
+      updateAllGradients(randomIndices.get(i));
     }
 
     for (Layer layer : layers) {
@@ -74,7 +81,7 @@ public class NeuralNetwork extends Drawable {
     for (int i = 0; i < images.size(); i++) {
       cost += costOfImage(i);
     }
-    return cost;
+    return cost / images.size();
   }
 
   public void renderPrediction(double[] outputs) {
@@ -170,19 +177,18 @@ public class NeuralNetwork extends Drawable {
     double[] inputs = dataset[0].getImages().get(imageIndex);
     double[] expectedOutputs = oneHot(dataset[0].getLabels().get(imageIndex));
 
-    calculateOutputs(inputs);
+    double[] outputs = calculateOutputs(inputs);
 
     Layer outputLayer = layers[layers.length - 1];
     double[] nodeValues = outputLayer.calculateOutputLayerNodeValues(expectedOutputs);
-    outputLayer.updateGradients(nodeValues);
+    outputLayer.updateGradients(nodeValues, layers[layers.length - 2].nodeValues);
 
     for (int i = layers.length - 2; i >= 0; i--) {
-      Layer oldLayer = layers[i + 1];
-      double[] oldNodeValues = oldLayer.calculateHiddenLayerNodeValues(layers[i], nodeValues);
-      layers[i].updateGradients(oldNodeValues);
-      nodeValues = oldNodeValues;
+      Layer currentLayer = layers[i];
+      Layer nextLayer = layers[i + 1];
+      nodeValues = currentLayer.calculateHiddenLayerNodeValues(nextLayer, nodeValues);
+      currentLayer.updateGradients(nodeValues, i == 0 ? inputs : layers[i - 1].nodeValues);
     }
-
   }
 
 }
@@ -207,7 +213,7 @@ class Layer {
 
     // randomize weights and biases in the layer
     for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++) {
-      biases[nodeOut] = Math.random() * 2 - 1;
+      biases[nodeOut] = (Math.random() * 2 - 1) / 10;
       for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn++) {
         weights[nodeOut][nodeIn] = Math.random() * 2 - 1;
       }
@@ -224,7 +230,6 @@ class Layer {
   }
 
   public double[] calculateOutputs(double[] inputs) {
-
     if (inputs.length != numNodesIn) {
       throw new IllegalArgumentException("Expected " + numNodesIn + " inputs, but got " + inputs.length);
     }
@@ -237,6 +242,9 @@ class Layer {
       }
       weightedInputs[nodeOut] = activationFunction(weightedInput);
     }
+
+    // Store the activations for backpropagation
+    this.nodeValues = weightedInputs.clone();
 
     return weightedInputs;
   }
@@ -260,29 +268,35 @@ class Layer {
   }
 
   public double[] calculateOutputLayerNodeValues(double[] expectedOutputs) {
-    for (int i = 0; i < nodeValues.length; i++) {
-      double costDerivative = nodeCostDerivative(expectedOutputs[i], nodeValues[i]);
-      double activationDerivative = activationDerivative(nodeValues[i]);
-      nodeValues[i] = costDerivative * activationDerivative;
+    double[] outputLayerNodeValues = new double[numNodesOut];
+    for (int i = 0; i < numNodesOut; i++) {
+      double outputActivation = nodeValues[i];
+      double costDerivative = nodeCostDerivative(outputActivation, expectedOutputs[i]);
+      double activationDerivative = activationDerivative(outputActivation);
+      outputLayerNodeValues[i] = costDerivative * activationDerivative;
     }
-
-    return nodeValues;
+    return outputLayerNodeValues;
   }
 
-  public double[] calculateHiddenLayerNodeValues(Layer oldLayer, double[] oldNodeValues) {
-    double[] newNodeValues = new double[numNodesOut];
-
-    for (int newNodeIndex = 0; newNodeIndex < newNodeValues.length; newNodeIndex++) {
-      double newNodeValue = 0;
-      for (int oldNodeIndex = 0; oldNodeIndex < oldNodeValues.length; oldNodeIndex++) {
-        double weightedInputDerivative = oldLayer.weights[oldNodeIndex][newNodeIndex];
-        newNodeValue += oldNodeValues[oldNodeIndex] * weightedInputDerivative;
+  public double[] calculateHiddenLayerNodeValues(Layer nextLayer, double[] nextLayerNodeValues) {
+    double[] hiddenLayerNodeValues = new double[numNodesOut];
+    for (int i = 0; i < numNodesOut; i++) {
+      double sum = 0;
+      for (int j = 0; j < nextLayer.numNodesOut; j++) {
+        sum += nextLayer.weights[j][i] * nextLayerNodeValues[j];
       }
-      newNodeValue *= activationDerivative(newNodeValue);
-      newNodeValues[newNodeIndex] = newNodeValue;
+      hiddenLayerNodeValues[i] = sum * activationDerivative(nodeValues[i]);
     }
+    return hiddenLayerNodeValues;
+  }
 
-    return newNodeValues;
+  public void updateGradients(double[] nodeValues, double[] inputs) {
+    for (int nodeOut = 0; nodeOut < numNodesOut; nodeOut++) {
+      for (int nodeIn = 0; nodeIn < numNodesIn; nodeIn++) {
+        weightCostGradients[nodeOut][nodeIn] += nodeValues[nodeOut] * inputs[nodeIn];
+      }
+      biasCostGradients[nodeOut] += nodeValues[nodeOut];
+    }
   }
 
   public void updateGradients(double[] nodeValues) {
