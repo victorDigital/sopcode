@@ -19,17 +19,12 @@ public class TrainingWindow extends Window {
     nn.loadDataSetToMemory();
 
     long startTime = System.currentTimeMillis();
-    PApplet.println("dataset cost:" + nn.totalCost());
+    PApplet.println("dataset cost:" + nn.computeLoss());
     long endTime = System.currentTimeMillis();
     PApplet.println("Time taken: " + (endTime - startTime) + " ms");
 
     startButton = new Button(p, 10f, 60f, 60, 40, "Start Training", position, () -> {
-      nn.learn(0.01f);
-      // p.println("Cost: " + cost);
-      double trainingAccuracy = nn.calculateAccuracy();
-      costGraph.addPoint(new GraphPoint(new PVector(costGraph.points.size(),
-          (float) trainingAccuracy)));
-      sendModel();
+      nn.trainNeuralNetwork(100);
       return null;
     });
     stopButton = new Button(p, 260f, 60f, 60, 40, "Stop Training", position, () -> {
@@ -58,8 +53,10 @@ public class TrainingWindow extends Window {
     }
   }
 
-  public void sendModel() {
-    sharedData.weights = convertFromArray3d(nn.getWeights());
-    sharedData.biases = convertFromArray2d(nn.getBiases());
-  }
+  /*
+   * public void sendModel() {
+   * sharedData.weights = convertFromArray3d(nn.getWeights());
+   * sharedData.biases = convertFromArray2d(nn.getBiases());
+   * }
+   */
 }

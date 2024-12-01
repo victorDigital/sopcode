@@ -45,9 +45,6 @@ public class Graph extends Drawable {
       yMin = Math.min(yMin, point.position.y - 1);
       yMax = Math.max(yMax, point.position.y + 1);
     }
-
-    p.println(xMin, xMax, yMin, yMax);
-
     startLimit = new PVector(xMin, yMin);
     endLimit = new PVector(xMax, yMax);
   }

@@ -25,7 +25,7 @@ public class InteractWindow extends Window {
     drawingPad.draw();
 
     double[] inputs = drawingPad.getPixelsFlatDouble();
-    double[] outputs = nn.calculateOutputs(inputs);
+    double[] outputs = nn.predict(inputs);
     nn.renderPrediction(outputs);
 
     p.popMatrix();
@@ -38,15 +38,17 @@ public class InteractWindow extends Window {
 
     // if the weights and biases in the shared data are the correct size, set the
     // model
-    if (sharedData.weights.size() > 0 && sharedData.biases.size() > 0) {
-      setModel();
-      sharedData.weights.clear();
-      sharedData.biases.clear();
-    }
+    // if (sharedData.weights.size() > 0 && sharedData.biases.size() > 0) {
+    // /* setModel(); */
+    // sharedData.weights.clear();
+    // sharedData.biases.clear();
+    // }
   }
 
-  public void setModel() {
-    nn.setWeights(convertToArray3d(sharedData.weights));
-    nn.setBiases(convertToArray2d(sharedData.biases));
-  }
+  /*
+   * public void setModel() {
+   * nn.setWeights(convertToArray3d(sharedData.weights));
+   * nn.setBiases(convertToArray2d(sharedData.biases));
+   * }
+   */
 }
