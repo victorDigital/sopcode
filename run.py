@@ -3,7 +3,7 @@ import pygame
 import sys
 import numpy as np
 from mnist_dataloader import MnistDataloader  # Added import statement
-from activations import phi, softmax
+from activations import sigmoid_activation, softmax
 
 pygame.init()
 WIDTH, HEIGHT = 800, 600
@@ -90,9 +90,9 @@ class DrawingPad:
 def predict(image, W1, b1, W2, b2, W3, b3):
     x = np.array(image).reshape(-1) / 255.0
     Z1 = x @ W1 + b1
-    A1 = phi(Z1)
+    A1 = sigmoid_activation(Z1)
     Z2 = A1 @ W2 + b2
-    A2 = phi(Z2)
+    A2 = sigmoid_activation(Z2)
     Z3 = A2 @ W3 + b3
     A3 = softmax(Z3)
     return np.argmax(A3), A3

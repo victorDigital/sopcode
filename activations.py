@@ -1,13 +1,13 @@
 import numpy as np
 
-def phi(x):
+def sigmoid_activation(x):
     return 1 / (1 + np.exp(-x))
 
-def dphi(x):
+def sigmoid_derivative(x):
     return np.exp(-x) / (1 + np.exp(-x))**2
 
-def dphiofphi(phi_value):
-    return phi_value * (1 - phi_value)
+def sigmoid_prime(sigmoid_output):
+    return sigmoid_output * (1 - sigmoid_output)
 
 def softmax(x):
     if x.ndim == 1:
